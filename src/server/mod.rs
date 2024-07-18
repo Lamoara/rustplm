@@ -1,24 +1,31 @@
-use std::error::Error;
+use std::{collections::HashMap, error::Error, net::{IpAddr, SocketAddr}, sync::Arc};
 
-use tokio::{io::{self}, net::{TcpListener, TcpStream}};
+use tokio::{io::{self}, net::{TcpListener, TcpStream}, sync::Mutex};
 
 use crate::console::{clear_console, show_menu};
+
+type ConnHash = Arc<Mutex<HashMap<ClientIP, ClientState>>>;
+type ClientIP = IpAddr;
+type ClientState = String;
 
 pub async fn run() -> std::io::Result<()> {
     let listener = TcpListener::bind("0.0.0.0:8080").await?;
     println!("Listening at: {}", listener.local_addr().unwrap());
 
+    let connections: ConnHash  = Arc::new(Mutex::new(HashMap::new()));
 
+    let connections_clone = connections.clone();
     let listener_handle = tokio::spawn(async move {
-        handle_socket_inputs(listener).await;
+        handle_socket_inputs(listener, connections_clone).await;
     });
 
-    let menu_handle = tokio::spawn(async move {
+    let menu_handle: tokio::task::JoinHandle<()> = tokio::spawn(async move {
         loop {
-            let option = show_menu(vec!["Show processes", "Stop"]);
+            let option: usize = show_menu(vec!["Show processes", "Stop"]);
             match option {
                 1 => {
                     clear_console();
+                    println!("{:?}", connections.lock().await);
                     continue
                 },
                 2 => break,
@@ -36,20 +43,27 @@ pub async fn run() -> std::io::Result<()> {
 }
 
 
-async fn handle_socket_inputs(listener: TcpListener) {
+async fn handle_socket_inputs(listener: TcpListener, connections: ConnHash) {
     loop {
         match listener.accept().await {
-            Ok((socket, _)) => {
-                handle_client(socket).await;
+            Ok((socket, dir)) => {
+                check_new_conn(connections.clone(), dir).await;
+                handle_client(socket).await.unwrap();
             }
             Err(e) => eprintln!("Failed to accept connection: {}", e),
         }
     }
 }
 
+async fn check_new_conn(connections: ConnHash, dir: SocketAddr){
+    let mut conn = connections.lock().await;
+    if !conn.contains_key(&dir.ip()){
+        conn.insert(dir.ip(), "New".to_string());
+    }
+    drop(conn);
+}
+
 async fn handle_client(listener: TcpStream) -> Result<(), Box<dyn Error>> {
-    println!("Client connected");
-    
     loop {
         // Wait for the socket to be readable
         listener.readable().await?;
