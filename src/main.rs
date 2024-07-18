@@ -8,7 +8,7 @@ pub mod console;
 async fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2{
-        eprintln!("Especify client or server: cargo run -- client/server");
+        eprintln!("Especify client or server: cargo run -- client/server and the address");
         exit(1);
     }
 

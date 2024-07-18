@@ -60,6 +60,14 @@ pub fn show_info(tittle: &str, content: &str){
         stdin().read_line(&mut s).unwrap();
 }
 
+pub fn ask_for_input(message: &str) -> String{
+    print!("{}", message);
+    let mut s: String = String::new();
+    let _ = stdout().flush();
+    stdin().read_line(&mut s).expect("Did not enter a correct string");
+    s
+}
+
 
 pub fn clear_console(){
     print!("\x1B[2J");
