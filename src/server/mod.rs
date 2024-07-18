@@ -10,7 +10,7 @@ type ClientState = String;
 
 pub async fn run() -> std::io::Result<()> {
     let listener = TcpListener::bind("0.0.0.0:8080").await?;
-    println!("Listening at: {}", listener.local_addr().unwrap());
+    println!("Listening at: {}", listener.local_addr()?);
 
     let connections: ConnHash  = Arc::new(Mutex::new(HashMap::new()));
 
@@ -47,8 +47,11 @@ async fn handle_socket_inputs(listener: TcpListener, connections: ConnHash) {
     loop {
         match listener.accept().await {
             Ok((socket, dir)) => {
-                check_new_conn(connections.clone(), dir).await;
-                handle_client(socket).await.unwrap();
+                let connections_clone = connections.clone();
+                tokio::spawn(async move{
+                    check_new_conn(connections_clone, dir).await;
+                    handle_client(socket).await.unwrap();
+                });
             }
             Err(e) => eprintln!("Failed to accept connection: {}", e),
         }
@@ -75,7 +78,7 @@ async fn handle_client(listener: TcpStream) -> Result<(), Box<dyn Error>> {
         match listener.try_read_buf(&mut buf) {
             Ok(0) => break,
             Ok(_) => {
-                let str = core::str::from_utf8(&buf).unwrap();
+                let str = core::str::from_utf8(&buf)?;
                 println!("{}", str); // Prints "⚠"
             }
             Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
