@@ -1,0 +1,24 @@
+{
+  "users": {
+    "Alfredo": {
+      "username": "Alfredo",
+      "password": "543"
+    },
+    "Pepe": {
+      "username": "Pepe",
+      "password": "1234"
+    },
+    "Marchelo": {
+      "username": "Marchelo",
+      "password": "vivaroxy"
+    },
+    "Peponcio": {
+      "username": "Peponcio",
+      "password": "1234"
+    },
+    "Juan": {
+      "username": "Juan",
+      "password": "123456"
+    }
+  }
+}
